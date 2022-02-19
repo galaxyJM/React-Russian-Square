@@ -1,11 +1,12 @@
 import React from 'react';
 import './App.scss';
-import {Side} from "./components/Side";
+import {Matrix} from "./components/Matrix";
+import {matrix} from "./const/square";
 
 function App() {
   return (
     <div className="App">
-      <Side/>
+      <Matrix matrix={matrix}/>
     </div>
   );
 }
