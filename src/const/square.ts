@@ -8,7 +8,8 @@ const square = {
     T: [[1, 1, 1], [0, 1, 0]]
 };
 
-const row = 30;
+
+const row = 20;
 const column = 20;
 let matrix:number[][] = [];
 for (let i = 0; i < row; i++) {
