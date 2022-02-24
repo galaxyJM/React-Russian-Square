@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import '../App.scss';
 import {square} from "../const/square";
 import {deepClone} from "../lib/deepclone";
@@ -21,44 +21,47 @@ type Square = {
 }
 
 export function Matrix(props: Props) {
-    const [initMatrix, setInitMatrix] = useState(deepClone(props.matrix));
+    const oldMatrix = useRef<number[][]>(deepClone(props.matrix));
     const [matrix, setMatrix] = useState(deepClone(props.matrix));
     const [offset, setOffset] = useState({downOffset: 0, transOffset: 10});
+    const offsetRef = useRef<Offset>({...offset})
+    const matrixRef = useRef<number[][]>(deepClone(props.matrix))
 
+    useEffect(() => {
+        function moveSquare(offset: Offset, squareBlock: keyof Square) {
+            let cloneMatrix = deepClone(oldMatrix.current);
+            square[squareBlock].map((item, index) => {
+                for (let i = 0; i < item.length; i++) {
+                    cloneMatrix[index + offset.downOffset][i + offset.transOffset] = item[i];
+                }
+                return undefined;
+            });
+            return deepClone(cloneMatrix)
+        }
+        if(offset.downOffset === 0){
+            const timer = setInterval(()=>{
+                matrixRef.current = moveSquare(offsetRef.current,"O")
+                setMatrix(deepClone(matrixRef.current))
+                setOffset((last) => {
+                    return {...last,downOffset: last.downOffset + 1}
+                })
+                if(offsetRef.current.downOffset === matrixRef.current.length - square["O"].length){
+                    oldMatrix.current = matrixRef.current
+                    setMatrix(deepClone(oldMatrix.current))
+                    setOffset((last) => {
+                        return {...last,downOffset: 0}
+                    })
+                    clearInterval(timer)
+                }
+            },500)
+        }
+        offsetRef.current = offset
+    },[offset]);
 
-    function moveSquare(offset: Offset, squareBlock: keyof Square) {
-        let cloneMatrix = deepClone(matrix);
-        square[squareBlock].map((item, index) => {
-            for (let i = 0; i < item.length; i++) {
-                cloneMatrix[index + offset.downOffset][i + offset.transOffset] = item[i];
-            }
-            return undefined
-        });
-        console.log(cloneMatrix);
-        setMatrix(deepClone(cloneMatrix));
-    }
-
-
-    function autoDown(blockType: keyof Square) {
-        const timer = setInterval(() => {
-            moveSquare(offset, blockType);
-            setOffset({...offset, downOffset: offset.downOffset++})
-
-            if (offset.downOffset === initMatrix.length - 1) {
-                console.log(1);
-                clearInterval(timer);
-                setInitMatrix(deepClone(matrix));
-                setOffset({downOffset: 0, transOffset: 0});
-            }
-        }, 1000);
-    }
-
-    // useEffect(()=>{
-    //     console.log(matrix);},[matrix])
     return (
         <div className="Side">
-            <h1>俄罗斯方块</h1>
-            <button onClick={() => autoDown("S")}>开始游戏</button>
+            <h1>俄罗斯方块 {offset.transOffset} {offset.downOffset}</h1>
+            <button>开始游戏</button>
             <button>左移</button>
             <button>右移</button>
             <div className="blank">

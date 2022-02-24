@@ -8,10 +8,10 @@ const square = {
     T: [[1, 1, 1], [0, 1, 0]]
 };
 
-
+const blockType = ["O", "I", "S", "Z", "L", "J", "T"];
 const row = 20;
 const column = 20;
-let matrix:number[][] = [];
+let matrix: number[][] = [];
 for (let i = 0; i < row; i++) {
     let initLine = [];
     for (let i = 0; i < column; i++) {
@@ -19,4 +19,4 @@ for (let i = 0; i < row; i++) {
     }
     matrix.push(initLine);
 }
-export {matrix, square};
+export {matrix, square, blockType};
