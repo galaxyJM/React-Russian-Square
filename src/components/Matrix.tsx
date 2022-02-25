@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from "react";
 import '../App.scss';
-import {square} from "../const/square";
+import {blockTypes, square} from "../const/square";
 import {deepClone} from "../lib/deepclone";
 
 type Props = {
@@ -20,43 +20,64 @@ type Square = {
     T: number[][]
 }
 
+
 export function Matrix(props: Props) {
     const oldMatrix = useRef<number[][]>(deepClone(props.matrix));
     const [matrix, setMatrix] = useState(deepClone(props.matrix));
     const [offset, setOffset] = useState({downOffset: 0, transOffset: 10});
-    const offsetRef = useRef<Offset>({...offset})
-    const matrixRef = useRef<number[][]>(deepClone(props.matrix))
-
+    const offsetRef = useRef<Offset>({...offset});
+    const matrixRef = useRef<number[][]>(deepClone(props.matrix));
     useEffect(() => {
+        let stop = false;
+
         function moveSquare(offset: Offset, squareBlock: keyof Square) {
             let cloneMatrix = deepClone(oldMatrix.current);
-            square[squareBlock].map((item, index) => {
-                for (let i = 0; i < item.length; i++) {
-                    cloneMatrix[index + offset.downOffset][i + offset.transOffset] = item[i];
+            for (let i = 0; i < square[squareBlock].length; i++) {
+                for (let j = 0; j < square[squareBlock][i].length; j++) {
+                    let oldSquare = oldMatrix.current[i + offset.downOffset][j + offset.transOffset];
+                    if (oldSquare && oldSquare === square[squareBlock][i][j]) {
+                        stop = true;
+                    }
+                    if (oldSquare && oldSquare === 1) {
+                        cloneMatrix[i + offset.downOffset][j + offset.transOffset] = 1;
+                    } else {
+                        cloneMatrix[i + offset.downOffset][j + offset.transOffset] = square[squareBlock][i][j];
+                    }
                 }
-                return undefined;
-            });
-            return deepClone(cloneMatrix)
+            }
+            return deepClone(cloneMatrix);
         }
-        if(offset.downOffset === 0){
-            const timer = setInterval(()=>{
-                matrixRef.current = moveSquare(offsetRef.current,"O")
-                setMatrix(deepClone(matrixRef.current))
-                setOffset((last) => {
-                    return {...last,downOffset: last.downOffset + 1}
-                })
-                if(offsetRef.current.downOffset === matrixRef.current.length - square["O"].length){
-                    oldMatrix.current = matrixRef.current
-                    setMatrix(deepClone(oldMatrix.current))
+
+        if (offset.downOffset === 0) {
+            let blockType = blockTypes[Math.floor(Math.random() * 5)] as keyof Square;
+            const timer = setInterval(() => {
+                let nextPosition = moveSquare(offsetRef.current, blockType);
+                if (!stop) {
+                    matrixRef.current = nextPosition;
+                } else {
+                    oldMatrix.current = matrixRef.current;
                     setOffset((last) => {
-                        return {...last,downOffset: 0}
-                    })
-                    clearInterval(timer)
+                        return {...last, downOffset: 0};
+                    });
+                    clearInterval(timer);
                 }
-            },500)
+                setMatrix(deepClone(matrixRef.current));
+                setOffset((last) => {
+                    return {...last, downOffset: last.downOffset + 1};
+                });
+                if (offsetRef.current.downOffset === matrixRef.current.length - square[blockType].length) {
+                    console.log(1);
+                    oldMatrix.current = matrixRef.current;
+                    setMatrix(deepClone(oldMatrix.current));
+                    setOffset((last) => {
+                        return {...last, downOffset: 0};
+                    });
+                    clearInterval(timer);
+                }
+            }, 300);
         }
-        offsetRef.current = offset
-    },[offset]);
+        offsetRef.current = offset;
+    }, [offset]);
 
     return (
         <div className="Side">
