@@ -24,12 +24,21 @@ type Square = {
 export function Matrix(props: Props) {
     const oldMatrix = useRef<number[][]>(deepClone(props.matrix));
     const [matrix, setMatrix] = useState(deepClone(props.matrix));
-    const [offset, setOffset] = useState({downOffset: 0, transOffset: 10});
+    const [offset, setOffset] = useState({downOffset: 0, transOffset: 5});
     const offsetRef = useRef<Offset>({...offset});
     const matrixRef = useRef<number[][]>(deepClone(props.matrix));
+    function left(){
+        setOffset((last) => {
+            return {...last, transOffset: last.transOffset - 1};
+        });
+    }
+    function right(){
+        setOffset((last) => {
+            return {...last, transOffset: last.transOffset + 1};
+        });
+    }
     useEffect(() => {
         let stop = false;
-
         function moveSquare(offset: Offset, squareBlock: keyof Square) {
             let cloneMatrix = deepClone(oldMatrix.current);
             for (let i = 0; i < square[squareBlock].length; i++) {
@@ -81,10 +90,10 @@ export function Matrix(props: Props) {
 
     return (
         <div className="Side">
-            <h1>俄罗斯方块 {offset.transOffset} {offset.downOffset}</h1>
+            <h1>俄罗斯方块</h1>
             <button>开始游戏</button>
-            <button>左移</button>
-            <button>右移</button>
+            <button onClick={left}>左移</button>
+            <button onClick={right}>右移</button>
             <div className="blank">
                 {
                     matrix.map((item, index) => {

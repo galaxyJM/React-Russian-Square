@@ -10,7 +10,7 @@ const square = {
 
 const blockTypes = ["O", "I", "S", "Z", "L", "J", "T"];
 const row = 20;
-const column = 20;
+const column = 10;
 let matrix: number[][] = [];
 for (let i = 0; i < row; i++) {
     let initLine = [];
