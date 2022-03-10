@@ -1,97 +1,82 @@
 import React, {useEffect, useRef, useState} from "react";
 import '../App.scss';
-import {blockTypes, square} from "../const/square";
 import {deepClone} from "../lib/deepclone";
+import {useSquare} from "../hooks/useSquare";
+import canWeMove from "../lib/canWeMove";
+
 
 type Props = {
     matrix: number[][]
 }
-type Offset = {
-    downOffset: number
-    transOffset: number
-}
-type Square = {
-    O: number[][],
-    I: number[][],
-    S: number[][],
-    Z: number[][],
-    L: number[][],
-    J: number[][],
-    T: number[][]
-}
 
 
 export function Matrix(props: Props) {
-    const oldMatrix = useRef<number[][]>(deepClone(props.matrix));
     const [matrix, setMatrix] = useState(deepClone(props.matrix));
-    const [offset, setOffset] = useState({downOffset: 0, transOffset: 5});
-    const offsetRef = useRef<Offset>({...offset});
     const matrixRef = useRef<number[][]>(deepClone(props.matrix));
-    function left(){
-        setOffset((last) => {
-            return {...last, transOffset: last.transOffset - 1};
-        });
-    }
-    function right(){
-        setOffset((last) => {
-            return {...last, transOffset: last.transOffset + 1};
-        });
-    }
-    useEffect(() => {
-        let stop = false;
-        function moveSquare(offset: Offset, squareBlock: keyof Square) {
-            let cloneMatrix = deepClone(oldMatrix.current);
-            for (let i = 0; i < square[squareBlock].length; i++) {
-                for (let j = 0; j < square[squareBlock][i].length; j++) {
-                    let oldSquare = oldMatrix.current[i + offset.downOffset][j + offset.transOffset];
-                    if (oldSquare && oldSquare === square[squareBlock][i][j]) {
-                        stop = true;
-                    }
-                    if (oldSquare && oldSquare === 1) {
-                        cloneMatrix[i + offset.downOffset][j + offset.transOffset] = 1;
-                    } else {
-                        cloneMatrix[i + offset.downOffset][j + offset.transOffset] = square[squareBlock][i][j];
-                    }
-                }
-            }
-            return deepClone(cloneMatrix);
+    const [square, update, resetSquare] = useSquare();
+
+    function left() {
+        if (canWeMove(square, matrixRef.current, {x: -1, y: 0})) {
+            update(-1, 0, false);
         }
 
-        if (offset.downOffset === 0) {
-            let blockType = blockTypes[Math.floor(Math.random() * 5)] as keyof Square;
-            const timer = setInterval(() => {
-                let nextPosition = moveSquare(offsetRef.current, blockType);
-                if (!stop) {
-                    matrixRef.current = nextPosition;
-                } else {
-                    oldMatrix.current = matrixRef.current;
-                    setOffset((last) => {
-                        return {...last, downOffset: 0};
-                    });
-                    clearInterval(timer);
-                }
-                setMatrix(deepClone(matrixRef.current));
-                setOffset((last) => {
-                    return {...last, downOffset: last.downOffset + 1};
-                });
-                if (offsetRef.current.downOffset === matrixRef.current.length - square[blockType].length) {
-                    console.log(1);
-                    oldMatrix.current = matrixRef.current;
-                    setMatrix(deepClone(oldMatrix.current));
-                    setOffset((last) => {
-                        return {...last, downOffset: 0};
-                    });
-                    clearInterval(timer);
-                }
-            }, 300);
+    }
+
+    function right() {
+        if (canWeMove(square, matrixRef.current, {x: 1, y: 0})) {
+            update(1, 0, false);
         }
-        offsetRef.current = offset;
-    }, [offset]);
+    }
+
+    useEffect(() => {
+        matrixRef.current = matrix;
+    }, [matrix]);
+    useEffect(() => {
+        if (!square.isStop) {
+                let timer = setInterval(() => {
+                    //先判断能否移动，能移动再移动
+                    console.log(canWeMove(square, matrixRef.current, {x: 0, y: 1}));
+                    if (canWeMove(square, matrixRef.current, {x: 0, y: 1})) {
+                        update(0, 1, false);
+                    } else {
+                        update(0, 0, true);
+                        clearInterval(timer);
+                    }
+                }, 500);
+            }
+        }
+
+        , [square.isStop]);
+    useEffect(() => {
+        function updateMatrix() {
+            let cloneMatrix = deepClone(matrixRef.current);
+            let newMatrix = cloneMatrix.map((row) => {
+                return row.map((col) => {
+                    return col === 1 ? 0 : col;
+                });
+            });
+            square.typeShape.map((row, x) => {
+                return row.map((col, y) => {
+                    if (col === 1) {
+                        square.isStop ? newMatrix[x + square.coordinate.y][y + square.coordinate.x] = 2 :
+                            newMatrix[x + square.coordinate.y][y + square.coordinate.x] = 1;
+                    }
+                    return y;
+                });
+            });
+            return deepClone(newMatrix);
+        }
+
+        setMatrix(updateMatrix());
+        if (square.isStop) {
+            resetSquare();
+        }
+    }, [square.coordinate, square.isStop, square.typeShape]);
+
 
     return (
         <div className="Side">
             <h1>俄罗斯方块</h1>
-            <button>开始游戏</button>
             <button onClick={left}>左移</button>
             <button onClick={right}>右移</button>
             <div className="blank">
@@ -102,6 +87,9 @@ export function Matrix(props: Props) {
                                     return <div className="col" key={index}/>;
                                 }
                                 if (item === 1) {
+                                    return <div className="col active" key={index}/>;
+                                }
+                                if (item === 2) {
                                     return <div className="col active" key={index}/>;
                                 } else {
                                     return undefined;
